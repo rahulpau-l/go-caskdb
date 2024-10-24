@@ -4,6 +4,7 @@ import (
 	"errors"
 	"io/fs"
 	"os"
+	"time"
 )
 
 // DiskStore is a Log-Structured Hash Table as described in the BitCask paper. We
@@ -47,6 +48,9 @@ import (
 //	   	store.Set("othello", "shakespeare")
 //	   	author := store.Get("othello")
 type DiskStore struct {
+	file   *os.File
+	keyDir map[string]KeyEntry
+	offset uint32
 }
 
 func isFileExists(fileName string) bool {
@@ -58,17 +62,46 @@ func isFileExists(fileName string) bool {
 }
 
 func NewDiskStore(fileName string) (*DiskStore, error) {
-	panic("implement me")
+	file, err := os.Create(fileName)
+	return &DiskStore{file, make(map[string]KeyEntry), 0}, err
 }
 
 func (d *DiskStore) Get(key string) string {
-	panic("implement me")
+	keyInfo, found := d.keyDir[key]
+
+	if !found {
+		return ""
+	}
+
+	byteArray := make([]byte, keyInfo.TotalSize)
+
+	_, err := d.file.Seek(int64(keyInfo.Position), 0)
+	if err != nil {
+		panic("Get() error during Seek")
+	}
+
+	_, err = d.file.Read(byteArray)
+	if err != nil {
+		panic("Get() error during Read")
+	}
+
+	_, _, value := decodeKV(byteArray)
+	return string(value)
 }
 
 func (d *DiskStore) Set(key string, value string) {
-	panic("implement me")
+	ts := uint32(time.Now().Unix())
+	totalSize, byteArr := encodeKV(ts, key, value)
+	d.keyDir[key] = NewKeyEntry(ts, d.offset, uint32(totalSize))
+	d.offset += uint32(totalSize) + 1
+	d.file.Write(byteArr)
 }
 
 func (d *DiskStore) Close() bool {
-	panic("implement me")
+	err := d.file.Close()
+	if err != nil {
+		return false
+	}
+
+	return true
 }

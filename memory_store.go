@@ -1,18 +1,18 @@
 package caskdb
 
 type MemoryStore struct {
-	data map[string]string
+	data map[string]KeyEntry
 }
 
 func NewMemoryStore() *MemoryStore {
-	return &MemoryStore{make(map[string]string)}
+	return &MemoryStore{make(map[string]KeyEntry)}
 }
 
-func (m *MemoryStore) Get(key string) string {
+func (m *MemoryStore) Get(key string) KeyEntry {
 	return m.data[key]
 }
 
-func (m *MemoryStore) Set(key string, value string) {
+func (m *MemoryStore) Set(key string, value KeyEntry) {
 	m.data[key] = value
 }
 
